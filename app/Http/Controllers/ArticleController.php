@@ -5,12 +5,10 @@ namespace App\Http\Controllers;
 use App\Article;
 use App\Tag;
 use App\Http\Requests\ArticleRequest;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 
 class ArticleController extends Controller
 {
-    
     public function __construct()
     {
         $this->authorizeResource(Article::class, 'article');
@@ -19,7 +17,7 @@ class ArticleController extends Controller
     public function index()
     {
         $articles = Article::all()->sortByDesc('created_at')
-        ->load('user');
+            ->load(['user', 'likes', 'tags']);
 
         return view('articles.index', ['articles' => $articles]);
     }
@@ -30,30 +28,32 @@ class ArticleController extends Controller
             return ['text' => $tag->name];
         });
 
-        $allTagNames = Tag::all()->map(function ($tag) {
-            return ['text' => $tag->name];
-        });
-
         return view('articles.create', [
             'allTagNames' => $allTagNames,
-        ]);   
+        ]);
     }
 
     public function store(ArticleRequest $request, Article $article)
     {
-        $article->fill($request->all()); 
+        $article->fill($request->all());
         $article->user_id = $request->user()->id;
         $article->save();
+
         $request->tags->each(function ($tagName) use ($article) {
             $tag = Tag::firstOrCreate(['name' => $tagName]);
             $article->tags()->attach($tag);
         });
+
         return redirect()->route('articles.index');
     }
 
     public function edit(Article $article)
     {
         $tagNames = $article->tags->map(function ($tag) {
+            return ['text' => $tag->name];
+        });
+
+        $allTagNames = Tag::all()->map(function ($tag) {
             return ['text' => $tag->name];
         });
 
@@ -67,11 +67,13 @@ class ArticleController extends Controller
     public function update(ArticleRequest $request, Article $article)
     {
         $article->fill($request->all())->save();
+
         $article->tags()->detach();
         $request->tags->each(function ($tagName) use ($article) {
             $tag = Tag::firstOrCreate(['name' => $tagName]);
             $article->tags()->attach($tag);
         });
+
         return redirect()->route('articles.index');
     }
 
@@ -84,7 +86,7 @@ class ArticleController extends Controller
     public function show(Article $article)
     {
         return view('articles.show', ['article' => $article]);
-    }    
+    }
 
     public function like(Request $request, Article $article)
     {
