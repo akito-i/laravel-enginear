@@ -1,8 +1,8 @@
 import './bootstrap'
 import Vue from 'vue'
-import ArticleLike from 'ArticleLike'
-import ArticleTagsInput from 'ArticleTagsInput'
-import FollowButton from 'FollowButton'
+import ArticleLike from './components/ArticleLike'
+import ArticleTagsInput from './components/ArticleTagsInput'
+import FollowButton from './components/FollowButton'
 
 const app = new Vue({
   el: '#app',
